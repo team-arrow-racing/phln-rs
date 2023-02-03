@@ -1,3 +1,6 @@
+[![crates.io](https://img.shields.io/crates/v/prohelion-wavesculptor.svg)](https://crates.io/crates/prohelion-wavesculptor)
+[![crates.io](https://img.shields.io/crates/d/prohelion-wavesculptor.svg)](https://crates.io/crates/prohelion-wavesculptor)
+
 # Prohelion WaveSculptor Driver
 
 ## Usage
