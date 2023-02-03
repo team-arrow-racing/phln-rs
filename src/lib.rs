@@ -157,7 +157,7 @@ trait WaveSculptor {
     /// Voltage rail measurement in volts.
     fn rail_measurement(rail: VoltageRail) -> Result<f32, &'static str>;
 
-    /// Temperature sensor measurement in degrees celcius.
+    /// Temperature sensor measurement in degrees celsius.
     fn temperature_measurement(sensor: TemperatureSensor) -> Result<f32, &'static str>;
 
     /// Bus amp-hour consumption.
