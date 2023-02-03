@@ -3,6 +3,8 @@
 
 # Prohelion WaveSculptor Driver
 
+Driver for the Prohelion (formerly Tritium) WaveSculptor motor controller.
+
 ## Usage
 
 Add an entry to your `Cargo.toml`:
