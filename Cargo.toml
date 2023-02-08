@@ -1,12 +1,12 @@
 [package]
-name = "prohelion-wavesculptor"
+name = "prohelion-drivers"
 authors = [
     "The Team Arrow Racing Association firmware development team",
     "Liam Kinne <liam@kinne.io>"
 ]
 description = "Driver for the Prohelion WaveSculptor Motor Driver."
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/prohelion-wavesculptor"
+documentation = "https://docs.rs/prohelion-drivers"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
