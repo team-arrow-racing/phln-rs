@@ -4,8 +4,8 @@
 # Prohelion Device Drivers
 
 This crate supports:
-- BMU (CMU and BMS).
-- WaveSculptor22 and 200.
+- Prohelion Battery Management System.
+- Prohelion WaveSculptor22 and 200.
 
 ## Usage
 
