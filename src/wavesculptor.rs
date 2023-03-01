@@ -3,43 +3,27 @@
 //! This driver is backwards compaible with Tritium WaveSculptors.
 
 use bitflags::bitflags;
-use socketcan::CANFrame;
+use bxcan::{Frame, Id, StandardId};
+use num_complex::Complex32;
 
-/// Control command.
-enum ControlCommand {
-    Drive = 0x01,
-    Power = 0x02,
-    Reset = 0x03,
-}
+// broadcase message identifiers normalized for base id.
+const ID_BROAD_ID: u16 = 0x00;
+const ID_BROAD_STATUS: u16 = 0x01;
+const ID_BROAD_BUS_MEAS: u16 = 0x02;
+const ID_BROAD_VELOCITY: u16 = 0x03;
+const ID_BROAD_PHASE_CURRENT: u16 = 0x04;
+const ID_BROAD_MOTOR_VOLTAGE: u16 = 0x05;
+const ID_BROAD_MOTOR_CURRENT: u16 = 0x06;
+const ID_BROAD_BACK_EMF: u16 = 0x07;
+const ID_BROAD_RAIL_15V: u16 = 0x08;
+const ID_BROAD_RAIL_3V3_1V9: u16 = 0x09;
+const ID_BROAD_TEMP_HSINK_MOTOR: u16 = 0x0B;
+const ID_BROAD_TEMP_DSP: u16 = 0x0C;
+const ID_BROAD_ODOMETER: u16 = 0x0E;
+const ID_BROAD_SLIP_SPEED: u16 = 0x17;
 
-/// Status message.
-enum StatusMessage {
-    Identification = 0x00,
-    Status = 0x01,
-    Bus = 0x02,
-    Velocity = 0x03,
-    PhaseCurrent = 0x04,
-    MotorVoltage = 0x05,
-    MotorCurrent = 0x06,
-    MotorBackEMF = 0x07,
-    Rail15V = 0x08,
-    Rail3v3And1v9 = 0x09,
-    HeatsinkAndMotorTemperature = 0x0B,
-    DSPBoardTemperature = 0x0C,
-    OdometerAndBusAmpHours = 0x0E,
-    SlipSpeedMeasurement = 0x17,
-}
-
-/// Configuration commands.
-enum ConfigurationCommands {
-    ActiveMotorChange = 0x12,
-}
-
-/// Motor controller identification information.
-struct IdentificationInfo {
-    serial_number: u32,
-    prohelion_id: u32,
-}
+// command message identifiers normalized for base id.
+const ID_CMD_MOTOR_CHANGE: u16 = 0x12;
 
 bitflags! {
     /// Error flags
@@ -69,115 +53,206 @@ bitflags! {
     }
 }
 
-enum VoltageRail {
-    /// 1.9V rail.
-    _1V9,
-    /// 3.3V rail.
-    _3V3,
-    /// 15V rail.
-    _15V,
+/// Status
+#[derive(Default, Clone, Copy)]
+struct Status {
+    /// Device serial number, allocated at manufacture
+    serial_number: Option<u32>,
+    /// Device identifier (Tritium ID or Prohelion ID)
+    identifier: Option<u32>,
+    /// CAN receive error count
+    can_rx_error_count: Option<u8>,
+    /// CAN transmit error count
+    can_tx_error_count: Option<u8>,
+    /// Active motor identifier
+    active_motor: Option<u16>,
+    /// Error flags
+    error_flags: Option<ErrorFlags>,
+    /// Limit flags
+    limit_flags: Option<LimitFlags>,
+    /// Bus current in amps
+    bus_current: Option<f32>,
+    /// Bus voltage in volts
+    bus_voltage: Option<f32>,
+    /// Vehicle velocity in meters/second
+    vehicle_velocity: Option<f32>,
+    /// Motor velocity in RPM
+    motor_velocity: Option<f32>,
+    /// Phase C current in amps RMS
+    phase_c_current: Option<f32>,
+    /// Phase B current in amps RMS
+    phase_b_current: Option<f32>,
+    /// Motor voltage vector in volts
+    motor_voltage_vector: Option<Complex32>,
+    /// Motor current vector in volts
+    motor_current_vector: Option<Complex32>,
+    /// Motor back-EMF vector in volts
+    motor_back_emf_vector: Option<Complex32>,
+    /// 15V rail measurement in volts
+    rail_15v: Option<f32>,
+    /// 3.3V rail measurement in volts
+    rail_3v3: Option<f32>,
+    /// 1.9V rail measurement in volts
+    rail_1v9: Option<f32>,
+    /// Heat-sink temperature in degrees celcius
+    heatsink_temperature: Option<f32>,
+    /// Motor temperature in degrees celcius
+    motor_temperature: Option<f32>,
+    /// DSP board temperature in degrees celcius
+    dsp_board_temperature: Option<f32>,
+    /// DC bus amp-hours measurement
+    bus_amp_hours: Option<f32>,
+    /// Odometer (distance traveled since last reset) in meters.
+    odometer: Option<f32>,
+    /// Slip speed measurement in Hz
+    slip_speed: Option<f32>,
 }
 
-enum TemperatureSensor {
-    /// Heatsink sensor.
-    Heatsink,
-    /// Motor sensor.
-    Motor,
-    /// DSP board sensor.
-    DspBoard,
+struct WaveSculptor {
+    base_id: u16,
+
+    status: Status,
 }
 
-/// Active motor change magic string.
-static MOTOR_CHANGE: &[u8] = "ACTMOT".as_bytes();
+impl WaveSculptor {
+    /// Create a new WaveSculptor instance.
+    pub fn new(base_id: u16) -> Self {
+        Self {
+            base_id,
+            status: Status {
+                ..Default::default()
+            },
+        }
+    }
 
-type Confirmation = Result<(), &'static str>;
+    /// Get the current status state of the device
+    pub fn status(self) -> Status {
+        self.status
+    }
 
-trait WaveSculptor {
-    // Drive commands.
+    pub fn receive(&mut self, frame: Frame) -> Result<(), &'static str> {
+        match frame.id() {
+            Id::Standard(id) => {
+                // is within range
+                if id.as_raw() >= self.base_id {
+                    // is there some data in this frame?
+                    if let Some(data) = frame.data() {
+                        // normalized identifier
+                        match id.as_raw() - self.base_id {
+                            ID_BROAD_ID => {
+                                self.status.identifier =
+                                    Some(u32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.serial_number =
+                                    Some(u32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Set the desired current setpoint as a percentage of the maximum current
-    /// setting and desired velocity in RPM.
-    fn drive(current: f32, velocity: f32) -> Confirmation;
+                            ID_BROAD_STATUS => {
+                                self.status.can_rx_error_count = Some(data[0]);
+                                self.status.can_tx_error_count = Some(data[1]);
+                                self.status.active_motor =
+                                    Some(u16::from_le_bytes(data[2..4].try_into().unwrap()));
+                                self.status.error_flags = ErrorFlags::from_bits(
+                                    u16::from_le_bytes(data[4..6].try_into().unwrap()),
+                                );
+                                self.status.limit_flags = LimitFlags::from_bits(
+                                    u16::from_le_bytes(data[6..8].try_into().unwrap()),
+                                );
+                            }
 
-    /// Set desired current draw from the bus by the controller as a percentage
-    /// of absolute bus current limit.
-    fn power(bus_current: f32) -> Confirmation;
+                            ID_BROAD_BUS_MEAS => {
+                                self.status.bus_voltage =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.bus_current =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Reset the software on the WaveSculptor.
-    fn reset() -> Confirmation;
+                            ID_BROAD_VELOCITY => {
+                                self.status.motor_velocity =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.vehicle_velocity =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    // Status commands.
+                            ID_BROAD_PHASE_CURRENT => {
+                                self.status.phase_b_current =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.phase_c_current =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Identification information.
-    fn serial_number() -> Result<u32, &'static str>;
+                            ID_BROAD_MOTOR_VOLTAGE => {
+                                let i = f32::from_le_bytes(data[0..4].try_into().unwrap());
+                                let r = f32::from_le_bytes(data[4..8].try_into().unwrap());
+                                self.status.motor_voltage_vector = Some(Complex32::new(r, i));
+                            }
 
-    /// Prohelion (or Tritium) identifier.
-    fn manufacturer_id() -> Result<u32, &'static str>;
+                            ID_BROAD_MOTOR_CURRENT => {
+                                let i = f32::from_le_bytes(data[0..4].try_into().unwrap());
+                                let r = f32::from_le_bytes(data[4..8].try_into().unwrap());
+                                self.status.motor_current_vector = Some(Complex32::new(r, i));
+                            }
 
-    /// CAN receive error count.
-    fn receive_error_count() -> Result<u8, &'static str>;
+                            ID_BROAD_BACK_EMF => {
+                                let i = f32::from_le_bytes(data[0..4].try_into().unwrap());
+                                let r = f32::from_le_bytes(data[4..8].try_into().unwrap());
+                                self.status.motor_back_emf_vector = Some(Complex32::new(r, i));
+                            }
 
-    /// CAN transmission error count.
-    fn transmit_error_count() -> Result<u8, &'static str>;
+                            ID_BROAD_RAIL_15V => {
+                                self.status.rail_15v =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Currently selected motor profile.
-    fn active_motor() -> Result<u16, &'static str>;
+                            ID_BROAD_RAIL_3V3_1V9 => {
+                                self.status.rail_1v9 =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.rail_3v3 =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Error flag status.
-    fn error_flags() -> Result<ErrorFlags, &'static str>;
+                            ID_BROAD_TEMP_HSINK_MOTOR => {
+                                self.status.motor_temperature =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.heatsink_temperature =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Limit flag status.
-    fn limit_flags() -> Result<LimitFlags, &'static str>;
+                            ID_BROAD_TEMP_DSP => {
+                                self.status.dsp_board_temperature =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                            }
 
-    /// Bus current in amps.
-    fn bus_current() -> Result<f32, &'static str>;
+                            ID_BROAD_ODOMETER => {
+                                self.status.odometer =
+                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                self.status.bus_amp_hours =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Bus voltage in volts.
-    fn bus_voltage() -> Result<f32, &'static str>;
+                            ID_BROAD_SLIP_SPEED => {
+                                self.status.slip_speed =
+                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                            }
 
-    /// Vehicle velocity in meters per seccond.
-    fn vehicle_velocity() -> Result<f32, &'static str>;
+                            _ => {}
+                        }
+                    }
+                }
+            }
+            Id::Extended(_) => {}
+        }
 
-    /// Motor velocity in RPM.
-    fn motor_velocity() -> Result<f32, &'static str>;
+        Ok(())
+    }
 
-    /// RMS current in motor phase C in amps.
-    fn phase_current_c() -> Result<f32, &'static str>;
+    /// Change the active motor profile.
+    /// 
+    /// `motor` must be between 0 and 9 (inclusive).
+    pub fn active_motor_change(self, motor: u8) -> Frame {
+        assert!(motor <= 9);
 
-    /// RMS current in motor phase B in amps.
-    fn phase_current_b() -> Result<f32, &'static str>;
+        let id = StandardId::new(self.base_id + ID_CMD_MOTOR_CHANGE).unwrap();
 
-    /// Voltage vector of the motor in volts.
-    fn motor_voltage_vector() -> Result<num_complex::Complex32, &'static str>;
-
-    /// Current vector fo the motor in amps.
-    fn motor_current_vector() -> Result<num_complex::Complex32, &'static str>;
-
-    /// Motor back EMF measurement in volts.
-    fn motor_back_emf() -> Result<num_complex::Complex32, &'static str>;
-
-    /// Voltage rail measurement in volts.
-    fn rail_measurement(rail: VoltageRail) -> Result<f32, &'static str>;
-
-    /// Temperature sensor measurement in degrees celsius.
-    fn temperature_measurement(sensor: TemperatureSensor) -> Result<f32, &'static str>;
-
-    /// Bus amp-hour consumption.
-    fn bus_amp_hours() -> Result<f32, &'static str>;
-
-    /// Odometer measurement in meters since last reset.
-    fn odometer_measurement() -> Result<f32, &'static str>;
-
-    /// Slip speed measurement in Hz.
-    fn slip_speed_measurement() -> Result<f32, &'static str>;
-
-    // Configuration commands.
-
-    /// Change active motor
-    fn active_motor_change(motor: u8) -> Result<f32, &'static str>;
-
-    // Interface helpers.
-
-    /// Send CAN bus frame.
-    fn send_frame(frame: CANFrame) -> Confirmation;
+        Frame::new_data(id, [0, motor, b'A', b'C', b'T', b'M', b'O', b'T'])
+    }
 }
