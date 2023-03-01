@@ -75,7 +75,7 @@ enum VoltageRail {
     /// 3.3V rail.
     _3V3,
     /// 15V rail.
-    _15V
+    _15V,
 }
 
 enum TemperatureSensor {
