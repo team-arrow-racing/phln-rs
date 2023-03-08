@@ -25,9 +25,12 @@ const ID_BROAD_SLIP_SPEED: u16 = 0x17;
 // command message identifiers normalized for base id.
 const ID_CMD_MOTOR_CHANGE: u16 = 0x12;
 
+/// Default base identifier
+pub static ID_BASE: u16 = 0x600;
+
 bitflags! {
     /// Error flags
-    struct ErrorFlags: u16 {
+    pub struct ErrorFlags: u16 {
         const HARDWARE_OVER_CURRENT       = 1 << 0;
         const SOFTWARE_OVER_CURRENT       = 1 << 1;
         const DC_BUS_OVER_CURRENT         = 1 << 2;
@@ -42,7 +45,7 @@ bitflags! {
 
 bitflags! {
     /// Limit flags
-    struct LimitFlags: u16 {
+    pub struct LimitFlags: u16 {
         const OUTPUT_VOLTAGE_PWM        = 1 << 0;
         const MOTOR_CURRENT             = 1 << 1;
         const VELOCITY                  = 1 << 2;
@@ -55,7 +58,7 @@ bitflags! {
 
 /// Status
 #[derive(Default, Clone, Copy)]
-struct Status {
+pub struct Status {
     /// Device serial number, allocated at manufacture
     serial_number: Option<u32>,
     /// Device identifier (Tritium ID or Prohelion ID)
@@ -108,7 +111,7 @@ struct Status {
     slip_speed: Option<f32>,
 }
 
-struct WaveSculptor {
+pub struct WaveSculptor {
     base_id: u16,
 
     status: Status,
