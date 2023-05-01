@@ -249,7 +249,7 @@ impl WaveSculptor {
     }
 
     /// Change the active motor profile.
-    /// 
+    ///
     /// `motor` must be between 0 and 9 (inclusive).
     pub fn active_motor_change(self, motor: u8) -> Frame {
         assert!(motor <= 9);
