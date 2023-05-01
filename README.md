@@ -1,5 +1,5 @@
-[![crates.io](https://img.shields.io/crates/v/prohelion-wavesculptor.svg)](https://crates.io/crates/prohelion-wavesculptor)
-[![crates.io](https://img.shields.io/crates/d/prohelion-wavesculptor.svg)](https://crates.io/crates/prohelion-wavesculptor)
+[![crates.io](https://img.shields.io/crates/v/phln.svg)](https://crates.io/crates/phln)
+[![crates.io](https://img.shields.io/crates/d/phln.svg)](https://crates.io/crates/phln)
 
 # Prohelion Device Drivers
 
@@ -13,7 +13,7 @@ Add an entry to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-prohelion-drivers = "0.1.0"
+phln = "0.1.0"
 ```
 
 ## References
