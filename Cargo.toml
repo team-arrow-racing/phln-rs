@@ -4,9 +4,9 @@ authors = [
     "The Team Arrow Racing Association firmware development team",
     "Liam Kinne <liam@kinne.io>"
 ]
-description = "Driver for the Prohelion WaveSculptor Motor Driver."
+description = "Embedded drivers for Prohelion devices."
 categories = ["embedded", "no-std"]
-documentation = "https://docs.rs/prohelion-drivers"
+documentation = "https://docs.rs/phln"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
