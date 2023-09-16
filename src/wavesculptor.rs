@@ -26,7 +26,7 @@ const ID_BROAD_SLIP_SPEED: u16 = 0x17;
 const ID_CMD_MOTOR_CHANGE: u16 = 0x12;
 
 /// Default base identifier
-pub static ID_BASE: u16 = 0x600;
+pub static ID_BASE: u16 = 0x400;
 
 bitflags! {
     /// Error flags
