@@ -60,55 +60,55 @@ bitflags! {
 #[derive(Default, Clone, Copy)]
 pub struct Status {
     /// Device serial number, allocated at manufacture
-    serial_number: Option<u32>,
+    pub serial_number: Option<u32>,
     /// Device identifier (Tritium ID or Prohelion ID)
-    identifier: Option<u32>,
+    pub identifier: Option<u32>,
     /// CAN receive error count
-    can_rx_error_count: Option<u8>,
+    pub can_rx_error_count: Option<u8>,
     /// CAN transmit error count
-    can_tx_error_count: Option<u8>,
+    pub can_tx_error_count: Option<u8>,
     /// Active motor identifier
-    active_motor: Option<u16>,
+    pub active_motor: Option<u16>,
     /// Error flags
-    error_flags: Option<ErrorFlags>,
+    pub error_flags: Option<ErrorFlags>,
     /// Limit flags
-    limit_flags: Option<LimitFlags>,
+    pub limit_flags: Option<LimitFlags>,
     /// Bus current in amps
-    bus_current: Option<f32>,
+    pub bus_current: Option<f32>,
     /// Bus voltage in volts
-    bus_voltage: Option<f32>,
+    pub bus_voltage: Option<f32>,
     /// Vehicle velocity in meters/second
-    vehicle_velocity: Option<f32>,
+    pub vehicle_velocity: Option<f32>,
     /// Motor velocity in RPM
-    motor_velocity: Option<f32>,
+    pub motor_velocity: Option<f32>,
     /// Phase C current in amps RMS
-    phase_c_current: Option<f32>,
+    pub phase_c_current: Option<f32>,
     /// Phase B current in amps RMS
-    phase_b_current: Option<f32>,
+    pub phase_b_current: Option<f32>,
     /// Motor voltage vector in volts
-    motor_voltage_vector: Option<Complex32>,
+    pub motor_voltage_vector: Option<Complex32>,
     /// Motor current vector in volts
-    motor_current_vector: Option<Complex32>,
+    pub motor_current_vector: Option<Complex32>,
     /// Motor back-EMF vector in volts
-    motor_back_emf_vector: Option<Complex32>,
+    pub motor_back_emf_vector: Option<Complex32>,
     /// 15V rail measurement in volts
-    rail_15v: Option<f32>,
+    pub rail_15v: Option<f32>,
     /// 3.3V rail measurement in volts
-    rail_3v3: Option<f32>,
+    pub rail_3v3: Option<f32>,
     /// 1.9V rail measurement in volts
-    rail_1v9: Option<f32>,
+    pub rail_1v9: Option<f32>,
     /// Heat-sink temperature in degrees celcius
-    heatsink_temperature: Option<f32>,
+    pub heatsink_temperature: Option<f32>,
     /// Motor temperature in degrees celcius
-    motor_temperature: Option<f32>,
+    pub motor_temperature: Option<f32>,
     /// DSP board temperature in degrees celcius
-    dsp_board_temperature: Option<f32>,
+    pub dsp_board_temperature: Option<f32>,
     /// DC bus amp-hours measurement
-    bus_amp_hours: Option<f32>,
+    pub bus_amp_hours: Option<f32>,
     /// Odometer (distance traveled since last reset) in meters.
-    odometer: Option<f32>,
+    pub odometer: Option<f32>,
     /// Slip speed measurement in Hz
-    slip_speed: Option<f32>,
+    pub slip_speed: Option<f32>,
 }
 
 pub struct WaveSculptor {
@@ -129,7 +129,7 @@ impl WaveSculptor {
     }
 
     /// Get the current status state of the device
-    pub fn status(self) -> Status {
+    pub fn status(&mut self) -> Status {
         self.status
     }
 
