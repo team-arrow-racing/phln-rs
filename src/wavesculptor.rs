@@ -202,27 +202,43 @@ impl WaveSculptor {
                             }
 
                             ID_BROAD_RAIL_15V => {
-                                self.status.rail_15v =
-                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                                // Extra care when handling these as this ID is shared with the MPPTs
+                                // Data is for wave sculptor if it has at least 9 bytes
+                                if data.len() >= 8 {
+                                    if let Ok(rail_15v) = data[4..8].try_into() {
+                                        self.status.rail_15v = Some(f32::from_le_bytes(rail_15v));
+                                    }
+                                }
                             }
 
                             ID_BROAD_RAIL_3V3_1V9 => {
-                                self.status.rail_1v9 =
-                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
-                                self.status.rail_3v3 =
-                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                                if data.len() >= 8 {
+                                    if let Ok(rail_1v9) = data[0..4].try_into() {
+                                        self.status.rail_1v9 = Some(f32::from_le_bytes(rail_1v9));
+                                    }
+                                    if let Ok(rail_3v3) = data[4..8].try_into() {
+                                        self.status.rail_3v3 = Some(f32::from_le_bytes(rail_3v3));
+                                    }
+                                }
                             }
 
                             ID_BROAD_TEMP_HSINK_MOTOR => {
-                                self.status.motor_temperature =
-                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
-                                self.status.heatsink_temperature =
-                                    Some(f32::from_le_bytes(data[4..8].try_into().unwrap()));
+                                if data.len() >= 8 {
+                                    if let Ok(motor_temperature) = data[0..4].try_into() {
+                                        self.status.motor_temperature = Some(f32::from_le_bytes(motor_temperature));
+                                    }
+                                    if let Ok(heatsink_temperature) = data[4..8].try_into() {
+                                        self.status.heatsink_temperature = Some(f32::from_le_bytes(heatsink_temperature));
+                                    }
+                                }
                             }
 
                             ID_BROAD_TEMP_DSP => {
-                                self.status.dsp_board_temperature =
-                                    Some(f32::from_le_bytes(data[0..4].try_into().unwrap()));
+                                if data.len() >= 4 {
+                                    if let Ok(dsp_board_temperature) = data[0..4].try_into() {
+                                        self.status.dsp_board_temperature = Some(f32::from_le_bytes(dsp_board_temperature));
+                                    }
+                                }
                             }
 
                             ID_BROAD_ODOMETER => {
