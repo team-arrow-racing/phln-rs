@@ -32,7 +32,7 @@ impl DriverControls {
         let id = StandardId::new(self.base_id + 0x01).unwrap();
 
         let vel = velocity_rpm.to_le_bytes();
-        let cur = current_percent.to_be_bytes();
+        let cur = current_percent.to_le_bytes();
 
         let data = [
             vel[0], vel[1], vel[2], vel[3], cur[0], cur[1], cur[2], cur[3],
