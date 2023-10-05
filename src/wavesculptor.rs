@@ -39,7 +39,7 @@ bitflags! {
         const CONFIG_READ_ERROR           = 1 << 5;
         const RAIL_15V_UVLO               = 1 << 6;
         const DESATURATION_FAULT          = 1 << 7;
-        const MOTOT_OVER_SPEED            = 1 << 8;
+        const MOTOR_OVER_SPEED            = 1 << 8;
     }
 }
 
